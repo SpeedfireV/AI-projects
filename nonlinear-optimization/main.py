@@ -4,10 +4,9 @@ import numpy as np
 
 class SolverParameters(NamedTuple):
     fitness: float = 0.05  # Liczba wywołań funkcji celu [0, 1] * FE_max
-    sigma: float = 10  # Siła mutacji
-    a: int = 1  # Interwał adaptacji sigma
-
-
+    sigma: float = 0.3  # Siła mutacji
+    a: int = 10  # Interwał adaptacji sigma
+    t_max: int = 10000  # Maksymalna liczba iteracji
 
 class SolverResult(NamedTuple):
     x_best: np.ndarray
@@ -17,14 +16,13 @@ class SolverResult(NamedTuple):
     params: SolverParameters
     time_s: float
 
-
-
 def solver(
         eval_func: Callable[[Sequence[float]], float], # Funkcja celu
         x0: Sequence[float], # Osobnik początkowy
         params: SolverParameters) -> SolverResult:
     start = time.time()
-    FE_max =  100 * len(x0) # FE_max
+    print(len(x0))
+    FE_max =  params.t_max * len(x0) # FE_max
     params = params._replace(fitness=params.fitness * FE_max)
     print(params.fitness)
     t = 1
@@ -49,17 +47,35 @@ def solver(
                 params = params._replace(sigma = params.sigma  * 0.82)
             l_s = 0
         t += 1
-        print(params)
         history.append(params)
-        print(len(history))
     stop = time.time()
     time_s = stop - start
     return SolverResult(x_best=x0, f_best=o_m, evals=t, history=params, params=params, time_s=time_s)
 
+def quadratic(x: np.ndarray) -> float:
+    return float(np.sum(x**2))
+
+def rosenbrock(x: np.ndarray, a=1.0, b=100.0) -> float:
+    # classic Rosenbrock for dim>=2
+    x = np.asarray(x)
+    return float(np.sum(b*(x[1:]-x[:-1]**2)**2 + (a-x[:-1])**2))
+
+def ackley(x: np.ndarray, a=20, b=0.2, c=2*np.pi) -> float:
+    x = np.asarray(x)
+    n = x.size
+    sum_sq = np.sum(x**2)
+    sum_cos = np.sum(np.cos(c*x))
+    return float(-a * np.exp(-b * np.sqrt(sum_sq / n)) - np.exp(sum_cos / n) + a + np.e)
 
 if __name__ == "__main__":
-	def f(x):
-		return x[0]**2 + x[1]**2 + 50
-	x0 = np.array([1, 1])
-	res = solver(f, x0, SolverParameters())
-	print(res)
+    def f(x):
+        return x[0]**2 + x[1]**2 + 50
+    x0 = np.random.normal(0, 5, 2)
+    res = solver(quadratic, x0, SolverParameters())
+    print(res)
+    x0 =  np.random.normal(-3, 3, 10)
+    res = solver(rosenbrock, x0, SolverParameters())
+    print(res)
+    x0 = np.random.normal(-32, 32, 30)
+    res = solver(ackley, x0, SolverParameters())
+    print(res)

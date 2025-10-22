@@ -1,0 +1,35 @@
+#Algorytm Ewolucyjny (1+1)
+
+## Implementacja
+W każdej iteracji tworzony jest jeden potomek,
+jeśli potomek ma lepszą wartość funkcji celu – zastępuje rodzica,
+
+
+Parametr mutacji σ adaptowany jest zgodnie z regułą 1/5 sukcesów:
+
+jeśli odsetek sukcesów >= 1/5:
+σ = σ * 1.22,
+
+jeśli odsetek sukcesów < 1/5:
+σ = σ * 0.82.
+
+Algorytm zatrzymuje się, gdy:
+a) osiągnięta zostanie maksymalna liczba iteracji (t_max * n_dim),
+b) nie nastąpi poprawa wyniku przez określony procent ewaluacji (fitness * FE_max).
+
+
+## Testy
+
+Dla każdej funkcji testowej wykonano eksperymenty dla dwóch wymiarowości:
+
+n = 10 i n = 30
+
+oraz dla parametrów:
+σ: [0.1, 1.0, 10.0]
+a: [10, 100]
+fitness = 0.05
+
+Każda kombinacja została uruchomiona 30 razy, a z wyników uzyskana została mediana funkcji celu w czasie.
+
+## Wyniki
+Wyniki testów znajdują się w pliku results/results.csv

@@ -1,18 +1,25 @@
 import time
 from typing import NamedTuple, Callable, Sequence, List, Dict, Any
 import numpy as np
+import matplotlib.pyplot as plt
 
 class SolverParameters(NamedTuple):
     fitness: float = 0.05  # Liczba wywołań funkcji celu [0, 1] * FE_max
     sigma: float = 0.3  # Siła mutacji
     a: int = 10  # Interwał adaptacji sigma
-    t_max: int = 10000  # Maksymalna liczba iteracji
+    t_max: int = 100  # Maksymalna liczba iteracji
+
+class HistoryElement(NamedTuple):
+    x: Sequence[float]
+    sigma: float
+    f: float
+    t: int
 
 class SolverResult(NamedTuple):
     x_best: np.ndarray
     f_best: float
     evals: int
-    history: List[SolverParameters]
+    history: List[HistoryElement]
     params: SolverParameters
     time_s: float
 
@@ -21,19 +28,16 @@ def solver(
         x0: Sequence[float], # Osobnik początkowy
         params: SolverParameters) -> SolverResult:
     start = time.time()
-    print(len(x0))
     FE_max =  params.t_max * len(x0) # FE_max
     params = params._replace(fitness=params.fitness * FE_max)
-    print(params.fitness)
     t = 1
     l_s = 0
     o0 = eval_func(x0)
     last_changed = t
-    history: List[SolverParameters] = [params]
+    history: List[HistoryElement] = [HistoryElement(x=x0, sigma=params.sigma, f=o0, t=t)]
     while t <= FE_max and t - last_changed <= params.fitness:
         z = np.random.uniform(-1, 1, len(x0)) # Rozkład normalny
         m = x0 + params.sigma * z
-        # print(m)
         o_m = eval_func(m) # Wartość dla mutanta
         if o_m <= o0:
             l_s += 1
@@ -47,10 +51,10 @@ def solver(
                 params = params._replace(sigma = params.sigma  * 0.82)
             l_s = 0
         t += 1
-        history.append(params)
+        history.append(HistoryElement(x=x0, sigma=params.sigma, f=o0, t=t))
     stop = time.time()
     time_s = stop - start
-    return SolverResult(x_best=x0, f_best=o_m, evals=t, history=params, params=params, time_s=time_s)
+    return SolverResult(x_best=x0, f_best=o_m, evals=t, history=history, params=params, time_s=time_s)
 
 def quadratic(x: np.ndarray) -> float:
     return float(np.sum(x**2))
@@ -67,15 +71,30 @@ def ackley(x: np.ndarray, a=20, b=0.2, c=2*np.pi) -> float:
     sum_cos = np.sum(np.cos(c*x))
     return float(-a * np.exp(-b * np.sqrt(sum_sq / n)) - np.exp(sum_cos / n) + a + np.e)
 
+def plot_history(res: SolverResult, title: str = ""):
+    f_values = [h.f for h in res.history]
+    iters = [h.t for h in res.history]
+
+    plt.figure(figsize=(7, 4))
+    plt.semilogy(iters, f_values, color="tab:blue", label="f(x)")
+    plt.xlabel("Nr Iteracji")
+    plt.ylabel("f(x)")
+    plt.title(title)
+    plt.grid(True, which="both", linestyle="--", alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     def f(x):
         return x[0]**2 + x[1]**2 + 50
     x0 = np.random.normal(0, 5, 2)
     res = solver(quadratic, x0, SolverParameters())
-    print(res)
+    plot_history(res, "Funkcja kwadratowa")
     x0 =  np.random.normal(-3, 3, 10)
     res = solver(rosenbrock, x0, SolverParameters())
-    print(res)
+    plot_history(res, "Rosenbrock")
     x0 = np.random.normal(-32, 32, 30)
     res = solver(ackley, x0, SolverParameters())
-    print(res)
+    plot_history(res, "Ackley")

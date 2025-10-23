@@ -84,16 +84,22 @@ def ackley(x: np.ndarray, a=20, b=0.2, c=2*np.pi) -> float:
 def plot_multiple_histories(results: List[SolverResult], title: str, filename_base: str):
     plt.figure(figsize=(8, 5))
     all_histories = []
+    all_sigmas = []
 
     for res in results:
         f_values = [h.f for h in res.history]
         iters = [h.t for h in res.history]
+        sigma_values = [h.sigma for h in res.history]
         plt.plot(iters, f_values, color="lightgray", linewidth=1, alpha=0.6)
         all_histories.append(np.interp(np.linspace(1, max(iters), 200),
                                        iters, f_values))
+        all_sigmas.append(np.interp(np.linspace(1, max(iters), 200),
+                                    iters, sigma_values))
 
     all_histories = np.array(all_histories)
     median_curve = np.median(all_histories, axis=0)
+    all_sigmas = np.array(all_sigmas)
+    median_sigma = np.median(all_sigmas, axis=0)
     xs = np.linspace(1, max(iters), 200)
 
     os.makedirs("charts", exist_ok=True)
@@ -112,10 +118,46 @@ def plot_multiple_histories(results: List[SolverResult], title: str, filename_ba
     plt.savefig(os.path.join("charts", f"{filename_base}.png"), dpi=200)
     plt.close()
 
+    # Sigma(t) plot
+    plt.figure(figsize=(8, 5))
+    for res in results:
+        sigma_values = [h.sigma for h in res.history]
+        iters = [h.t for h in res.history]
+        plt.plot(iters, sigma_values, color="lightgray", linewidth=1, alpha=0.6)
+    plt.plot(xs, median_sigma, color="tab:orange", linewidth=2.5, label="Median sigma")
+    plt.xlabel("Iteration")
+    plt.ylabel("sigma")
+    plt.title(f"Sigma(t) - {title}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join("charts", f"{filename_base}_sigma.png"), dpi=200)
+    plt.close()
+
+    # Zwracamy mediany do dalszego wykorzystania
+    return xs, median_curve, median_sigma
+
+
+def plot_all_medians(medians_dict, xs, title, filename_base, ylabel, legend_labels):
+    plt.figure(figsize=(8, 5))
+    for key, median_curve in medians_dict.items():
+        plt.semilogy(xs, median_curve, label=legend_labels[key])
+    plt.xlabel("Iteration")
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.tight_layout()
+    os.makedirs("charts", exist_ok=True)
+    plt.savefig(os.path.join("charts", f"{filename_base}.png"), dpi=200)
+    plt.close()
+
 
 def run_experiments(eval_func, name: str, n_dim: int,
                     sigma_grid, a_grid, num_runs: int = 10):
     results_summary = []
+    medians_f = {}
+    medians_sigma = {}
+    xs_ref = None
+    legend_labels = {}
     for sigma in sigma_grid:
         for a in a_grid:
             key = f"{name}_n{n_dim}_sigma{sigma}_a{a}"
@@ -140,11 +182,15 @@ def run_experiments(eval_func, name: str, n_dim: int,
                     "evals": res.evals,
                     "time_s": res.time_s
                 })
-            plot_multiple_histories(results, key, key)
+            xs, median_curve, median_sigma = plot_multiple_histories(results, key, key)
+            if xs_ref is None:
+                xs_ref = xs
+            medians_f[(sigma, a)] = median_curve
+            medians_sigma[(sigma, a)] = median_sigma
+            legend_labels[(sigma, a)] = f"sigma={sigma}, a={a}"
             df_local = pd.DataFrame(rows)
             results_summary.append(df_local)
-    return pd.concat(results_summary, ignore_index=True)
-
+    return pd.concat(results_summary, ignore_index=True), medians_f, medians_sigma, xs_ref, legend_labels
 
 if __name__ == "__main__":
     sigma_grid = [0.1, 1.0, 10.0]
@@ -157,8 +203,12 @@ if __name__ == "__main__":
                        (rosenbrock, "Rosenbrock"),
                        (ackley, "Ackley")]:
         for n_dim in [10, 30]:
-            df = run_experiments(func, name, n_dim, sigma_grid, a_grid, num_runs)
+            df, medians_f, medians_sigma, xs, legend_labels = run_experiments(func, name, n_dim, sigma_grid, a_grid, num_runs)
             all_results.append(df)
+            # Wykres zbiorczy median f(t)
+            plot_all_medians(medians_f, xs, f"{name} n={n_dim} - Median f(x)", f"{name}_n{n_dim}_all_medians", "f(x)", legend_labels)
+            # Wykres zbiorczy median sigma(t)
+            plot_all_medians(medians_sigma, xs, f"{name} n={n_dim} - Median sigma(t)", f"{name}_n{n_dim}_all_sigmas", "sigma", legend_labels)
 
     df_all = pd.concat(all_results, ignore_index=True)
     os.makedirs("results", exist_ok=True)

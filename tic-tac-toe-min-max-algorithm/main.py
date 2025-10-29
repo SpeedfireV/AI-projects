@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from tic_tac_toe_game import TicTacToe, GameState
 
 
@@ -8,7 +6,7 @@ def min_max_algorithm(game: TicTacToe, depth: int, max_depth: int, max_player: s
     if game_state != GameState.Ongoing:
         return [game_state, game, stacktrace]
     else:
-        moves_left: list[int] = game.moves_left()
+        moves_left: list[int] = game.moves_left(True)
         # MAX
         if game.player == max_player:
             best_result = GameState.Lost
@@ -52,7 +50,7 @@ if __name__ == "__main__":
     "",  "",  ""
 )
 ,player="X")
-    game_result, terminal_game_state, stacktrace = min_max_algorithm(game, depth=1, max_depth=3, max_player="O")
+    game_result, game, stacktrace = min_max_algorithm(game, depth=1, max_depth=3, max_player="O")
     for game in stacktrace:
         game.show_board()
 

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, replace, field
 from enum import Enum
+from random import shuffle
 
 class GameState(Enum):
     Won = 1
@@ -19,11 +20,13 @@ class TicTacToe:
         if self.player is None:
             object.__setattr__(self, "player", "X")
 
-    def moves_left(self) -> list[int]:
+    def moves_left(self, random: bool = False) -> list[int]:
         moves: list[int] = []
         for move, value in enumerate(self.board):
             if value == "":
                 moves.append(move)
+        if random:
+            shuffle(moves)
         return moves
 
     def __is_move_available(self, pos: int):

@@ -1,9 +1,5 @@
-from copy import copy
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, replace, field
 from enum import Enum
-
-from google.protobuf.type_pb2 import EnumValue
-
 
 class GameState(Enum):
     Won = 1
@@ -11,16 +7,17 @@ class GameState(Enum):
     Lost = -1
     Ongoing = None
 
-
-
-
 @dataclass(frozen=True)
 class TicTacToe:
     board: tuple[str] = None
+    player: str = None
+
     def __post_init__(self):
         # Sets empty board
         if self.board is None:
             object.__setattr__(self, "board", tuple("" for _ in range(9)))
+        if self.player is None:
+            object.__setattr__(self, "player", "X")
 
     def moves_left(self) -> list[int]:
         moves: list[int] = []
@@ -32,13 +29,13 @@ class TicTacToe:
     def __is_move_available(self, pos: int):
         return self.board[pos] == ""
 
-    def make_move(self, pos: int, player: str):
+    def make_move(self, pos: int):
         if not self.__is_move_available(pos):
             return None
-        new_board: tuple[str] = self.board[:pos] + (player, ) + self.board[pos + 1:]
-        return replace(self, board=new_board)
+        new_board: tuple[str] = self.board[:pos] + (self.player,) + self.board[pos + 1:]
+        return replace(self, board=new_board, player="X" if self.player=="O" else "O")
 
-    def who_wins(self, player: str) -> GameState:
+    def did_player_win(self, player: str) -> GameState:
 
         """
         Function that checks if someone wins the game with the current state of the board
@@ -54,7 +51,7 @@ class TicTacToe:
         # Checks cols
         for i in range(3):
             if self.board[i] == self.board[i + 3] == self.board[i + 6] != "":
-                return terminal_value(self.board[i * 3])
+                return terminal_value(self.board[i])
 
         # Checks cross top-left to bottom-right
         if self.board[0] == self.board[4] == self.board[8] != "":
@@ -86,16 +83,19 @@ class TicTacToe:
 if __name__ == "__main__":
     game = TicTacToe()
     game.show_board()
-    game = game.make_move(1, "X")
+    game = game.make_move(1)
     game.show_board()
-    game = game.make_move(2, "O")
+    game = game.make_move(2)
     game.show_board()
-    game = game.make_move(0, "X")
+    game = game.make_move(0)
     game.show_board()
-    game = game.make_move(6, "X")
+    game = game.make_move(6)
     game.show_board()
-    game = game.make_move(4, "O")
+    game = game.make_move(4)
     game.show_board()
-    game = game.make_move(3, "X")
+    game = game.make_move(3)
     game.show_board()
-    print(game.who_wins("X"))
+    game = game.make_move(7)
+    game.show_board()
+
+    print(game.did_player_win("X"))

@@ -5,8 +5,11 @@ def min_max_algorithm(game: TicTacToe, depth: int, max_depth: int, max_player: s
     game_state: GameState = game.did_player_win(player=max_player)
     if game_state != GameState.Ongoing:
         return [game_state, game, stacktrace]
+
+    if depth == max_depth:
+        return [GameState.Tie, game, stacktrace]
     else:
-        moves_left: list[int] = game.moves_left(True)
+        moves_left: list[int] = game.moves_left(False)
         # MAX
         if game.player == max_player:
             best_result = GameState.Lost
@@ -50,9 +53,11 @@ if __name__ == "__main__":
     "",  "",  ""
 )
 ,player="X")
-    game_result, game, stacktrace = min_max_algorithm(game, depth=1, max_depth=3, max_player="O")
-    for game in stacktrace:
-        game.show_board()
+    game_result = GameState.Ongoing
+    while len(game.moves_left()) > 0 and (game_result == GameState.Ongoing or game_result == GameState.Tie):
+        game_result, game, stacktrace = min_max_algorithm(game, depth=0, max_depth=5, max_player="O")
+        for game in stacktrace:
+            game.show_board()
 
     print(game_result)
 

@@ -1,12 +1,12 @@
 from dataclasses import dataclass, replace, field
-from enum import Enum
+from enum import Enum, auto
 from random import shuffle
 
 class GameState(Enum):
     Won = 1
     Tie = 0
     Lost = -1
-    Ongoing = None
+    Ongoing = auto()
 
 @dataclass(frozen=True)
 class TicTacToe:

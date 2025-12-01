@@ -6,7 +6,7 @@ class GameState(Enum):
     Won = 1
     Tie = 0
     Lost = -1
-    Ongoing = None
+    Ongoing = 0
 
 @dataclass(frozen=True)
 class TicTacToe:
